@@ -9,7 +9,7 @@ Clipboard output should be:
 `<img src=\"data:image/png;base64,[BASE64]\"/>`, where BASE64 is the output image as b64.
 
 ### Usage
-`INPUT_FILENAME [ARUGMENTS]`  
+`INPUT_FILENAME [ARGUMENTS]`  
 
 `-s [FILE_SIZE]` `--size [FILE_SIZE]` shrink image to just under specified size (KB)  
 `-o [OUTPUT_FILENAME]` output to file - provide full filename  
