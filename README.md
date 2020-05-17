@@ -1,4 +1,4 @@
-# Image Resizer for Mumble
+# Image Resizer for Mumble (WIP)
 Resizes and converts images to Base64 for use in Mumble. 
 By Default, converts images to be less than 128kb, 
 and copy's the Base64 code to your clipboard. 
