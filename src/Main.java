@@ -3,18 +3,14 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.Scanner;
-import java.io.File;
 
 public class Main {
-    /*
-    Defaults should be:
-    - 128kb
-    - copy to clipboard
-    - delete temp file
-     */
 
     /**
      * Resizes an image to fit mumble send cap, and copies the mumble code to clipboard.
@@ -57,7 +53,7 @@ public class Main {
             }
         }
 
-        //Get Format
+        //Get & Set Filename variables
         String formatName;
         int lastIndex = args[0].lastIndexOf('.');
         if (lastIndex > 0) {
@@ -183,7 +179,7 @@ public class Main {
     /**
      * Reads file as a byte array with some exceptions.
      * @param InputFile the file to read in
-     * @return byte[] representaiton of file
+     * @return byte[] representation of file
      */
     public static byte[] readFileInByteArray(File InputFile) {
         FileInputStream fin = null;
