@@ -22,26 +22,29 @@ public class Main {
     - delete temp file
      */
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException {
 
         //Set Default Arguments
         int sizeToConvert = 128*1000; // what size to convert the file to (bytes)
         String outputFileName = ""; //filename to save as output
-        boolean raw = false; //return raw base64
+        boolean keepFile = false; //return raw base64
         boolean useNonB64SizeCheck = false; //use the raw file size as stop limit for sizeToConvert, instead of base64.
 
         //user set arguments
         for (int i = 1; i < args.length; i++) {
             if (args[i].startsWith("-")) { //if parameter argument
                 switch (args[i]) {
+                    case "--size":
                     case "-s": //size case
                         sizeToConvert = Integer.parseInt(args[i+1])*1000;
                         break;
                     case "-o": //output to file
+                    case "--output":
                         outputFileName = args[i+1];
                         break;
-                    case "-raw": //raw Base64 output
-                        raw = true;
+                    case "-k": //keep the output file
+                    case "--keep":
+                        keepFile = true;
                         break;
                     case "-nonb64":
                         useNonB64SizeCheck = true;
@@ -106,14 +109,10 @@ public class Main {
             clipboard.setContents(stringSelection, null);
         }
 
-        //Delete raws
-        if (raw) {
-            //todo delete conversionTemp, and output the base64 conversion to clipboard.
-        } else {
-            //todo rename conversionTemp to outputFileName
+        if (!keepFile) {
+            File deleteMe = new File(outputFileName);
+            if (deleteMe.delete()) System.out.println("File Deleted"); else System.out.println("Something went wrong...");
         }
-
-
     }
 
     public static BufferedImage scale(BufferedImage imageToScale, int dWidth, int dHeight) {
@@ -130,7 +129,6 @@ public class Main {
     public static boolean doesFileMeetSizeRequirements(int sizeToConvert, File fileFile) {
         byte[] encodedBytes = Base64.getEncoder().encode(readFileInByteArray(fileFile));
 //        System.out.println("encodedBytes " + new String(encodedBytes)); //DEBUG PRINTOUT
-        int currentLength = encodedBytes.length;
 //        System.out.println(currentLength+ " <-- Current length"); //DEBUG PRINTOUT
         return encodedBytes.length < sizeToConvert;
     }
@@ -146,21 +144,11 @@ public class Main {
     }
 
     public static byte[] readFileInByteArray(File InputFile) {
-
-        File file = InputFile;
         FileInputStream fin = null;
         try {
-            // create FileInputStream object
-            fin = new FileInputStream(file);
-
-            byte[] fileContent = new byte[(int)file.length()];
-
-            // Reads up to certain bytes of data from this input stream into an array of bytes.
+            fin = new FileInputStream(InputFile);
+            byte[] fileContent = new byte[(int) InputFile.length()];
             fin.read(fileContent);
-            //create string from byte array
-            String s = new String(fileContent);
-//            System.out.println("File content: " + s);
-//            return s;
             return fileContent;
         }
         catch (FileNotFoundException e) {
@@ -170,7 +158,6 @@ public class Main {
             System.out.println("Exception while reading file " + ioe);
         }
         finally {
-            // close the streams using close method
             try {
                 if (fin != null) {
                     fin.close();
@@ -180,7 +167,6 @@ public class Main {
                 System.out.println("Error while closing stream: " + ioe);
             }
         }
-//        return filename;
         return null;
     }
 
