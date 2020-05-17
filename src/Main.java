@@ -9,12 +9,6 @@ import java.util.Scanner;
 import java.io.File;
 
 public class Main {
-    /*todo
-     * remove temp file if just doing copy to clipboard option,
-     * more runtime args?
-     * finish nonB64 variant.
-     */
-
     /*
     Defaults should be:
     - 128kb
@@ -22,6 +16,16 @@ public class Main {
     - delete temp file
      */
 
+    /**
+     * Resizes an image to fit mumble send cap, and copies the mumble code to clipboard.
+     * @param args Arguments:
+     *             `-s [FILE_SIZE]` `--size [FILE_SIZE]` shrink image to just under specified size (KB)
+     *             `-o [OUTPUT_FILENAME]` output to file - provide full filename
+     *             `-nonb64` uses raw file size instead of base64 encoded size
+     *             `-k`,`--keep` keeps the converted file
+     *             DEFAULT: 128kb, delete temp file, comparison check on base64 size.
+     * @throws IOException File cant be found.
+     */
     public static void main(String[] args) throws IOException {
 
         //Set Default Arguments
@@ -54,14 +58,13 @@ public class Main {
         }
 
         //Get Format
-        String formatName = "";
+        String formatName;
         int lastIndex = args[0].lastIndexOf('.');
         if (lastIndex > 0) {
             formatName = args[0].substring(lastIndex+1);
         } else throw new FileNotFoundException("Failed to get file format name");
         System.out.println("FORMAT: "+formatName);
-        if (outputFileName.equals("")) outputFileName = "conversionTemp."+formatName;
-
+        if (outputFileName.isEmpty()) outputFileName = "conversionTemp."+formatName;
 
         //File IO
         File FILE = new File(args[0]); //file from input filename
@@ -77,44 +80,37 @@ public class Main {
         BufferedImage scaledImage = image;
         if (useNonB64SizeCheck) {
             while (!doesFileMeetSizeRequirementsNonBase64(sizeToConvert,FILE)) {
-                //todo while not meeting file size requirements.
+                //scale the image
                 scaledImage = scale(image, (int) (scaledImage.getWidth()/1.025), (int) (scaledImage.getHeight()/1.025));
-                //write to file
-                try {
-                    ImageIO.write(scaledImage, formatName, new File(outputFileName));
-                } catch (IOException e) {
-                    System.out.println("Exception occurred :" + e.getMessage());
-                }
-                //set FILE = to new written file
-                FILE = new File(outputFileName);
+                //write the image
+                FILE = writeImage(scaledImage, formatName,outputFileName);
             }
         } else {
             while (!doesFileMeetSizeRequirements(sizeToConvert,FILE)) {
-                //todo while not meeting file size requirements.
+                //scale the image
                 scaledImage = scale(image, (int) (scaledImage.getWidth()/1.025), (int) (scaledImage.getHeight()/1.025));
-                //write to file
-                try {
-                    ImageIO.write(scaledImage, formatName, new File(outputFileName));
-                } catch (IOException e) {
-                    System.out.println("Exception occurred :" + e.getMessage());
-                }
-                //set FILE = to new written file
-                FILE = new File(outputFileName);
+                //write the image
+                FILE = writeImage(scaledImage, formatName,outputFileName);
             }
-//            System.out.println("<img src=\"data:image/png;base64,"+ new String(Base64.getEncoder().encode(readFileInByteArray(FILE))) +"\"/>"); //DEBUG PRINTOUT
-
-            //Copy to Clipboard
-            StringSelection stringSelection = new StringSelection("<img src=\"data:image/png;base64,"+ new String(Base64.getEncoder().encode(readFileInByteArray(FILE))) +"\"/>");
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-            clipboard.setContents(stringSelection, null);
         }
 
+        //Copy Result to Clipboard
+        sendToClipboard(FILE);
+
+        //If wanted, delete the file
         if (!keepFile) {
             File deleteMe = new File(outputFileName);
             if (deleteMe.delete()) System.out.println("File Deleted"); else System.out.println("Something went wrong...");
         }
     }
 
+    /**
+     * Scales an image
+     * @param imageToScale the BufferedImage to be scales
+     * @param dWidth new width
+     * @param dHeight new height
+     * @return a Scaled image
+     */
     public static BufferedImage scale(BufferedImage imageToScale, int dWidth, int dHeight) {
         BufferedImage scaledImage = null;
         if (imageToScale != null) {
@@ -126,14 +122,55 @@ public class Main {
         return scaledImage;
     }
 
+    /**
+     * Converts file to a base64 byte array, and checks if the length of the array is
+     * smaller than the sizeToConvert
+     * @param sizeToConvert size to check against
+     * @param fileFile input file
+     * @return if input file is smaller in base64 than specified
+     */
     public static boolean doesFileMeetSizeRequirements(int sizeToConvert, File fileFile) {
         byte[] encodedBytes = Base64.getEncoder().encode(readFileInByteArray(fileFile));
 //        System.out.println("encodedBytes " + new String(encodedBytes)); //DEBUG PRINTOUT
-//        System.out.println(currentLength+ " <-- Current length"); //DEBUG PRINTOUT
+        System.out.println(encodedBytes.length+ " <-- Current length"); //DEBUG PRINTOUT
         return encodedBytes.length < sizeToConvert;
     }
 
+    /**
+     * Copy's base64 code with code for Mumble to interpret it correctly, to clipboard.
+     * @param FILE file who's b64 encoding will be copied
+     */
+    public static void sendToClipboard(File FILE) {
+        StringSelection stringSelection = new StringSelection("<img src=\"data:image/png;base64,"+ new String(Base64.getEncoder().encode(readFileInByteArray(FILE))) +"\"/>");
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(stringSelection, null);
+    }
 
+    /**
+     * Writes image file.
+     * @param imageName image to write
+     * @param formatName format of img
+     * @param outputFileName output filename
+     * @return a new File object.
+     */
+    public static File writeImage(BufferedImage imageName, String formatName, String outputFileName) {
+        //write to file
+        try {
+            ImageIO.write(imageName, formatName, new File(outputFileName));
+        } catch (IOException e) {
+            System.out.println("Exception occurred :" + e.getMessage());
+        }
+        //set FILE = to new written file
+        return new File(outputFileName);
+    }
+
+    /**
+     * Checks if byte representation of file is smaller than an input.
+     * Altered version of doesFileMeetSizeRequirements()
+     * @param sizeToConvert size to check against
+     * @param fileFile input file.
+     * @return if
+     */
     public static boolean doesFileMeetSizeRequirementsNonBase64(int sizeToConvert, File fileFile) {
         byte[] encodedBytes = readFileInByteArray(fileFile);
 //        System.out.println("encodedBytes " + new String(encodedBytes)); //fixme slows stuff down
@@ -143,6 +180,11 @@ public class Main {
         return encodedBytes.length < sizeToConvert;
     }
 
+    /**
+     * Reads file as a byte array with some exceptions.
+     * @param InputFile the file to read in
+     * @return byte[] representaiton of file
+     */
     public static byte[] readFileInByteArray(File InputFile) {
         FileInputStream fin = null;
         try {
